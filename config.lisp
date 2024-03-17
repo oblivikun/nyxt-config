@@ -1,3 +1,4 @@
+
 (define-configuration (input-buffer) ((default-modes (remove-if (lambda (nyxt::m) (find (symbol-name nyxt::m) '("EMACS-MODE" "VI-NORMAL-MODE" "VI-INSERT-MODE") :test #'string=)) %slot-value%)))) (define-configuration (input-buffer) ((default-modes (pushnew 'nyxt/mode/emacs:emacs-mode %slot-value%))))
 (defvar gruv-theme
  (make-instance 'theme:theme
@@ -42,3 +43,63 @@
     ((style (str:concat %slot-value%
                         (theme:themed-css (theme *browser*))))))
 
+(defvar *my-search-engines*
+ (list
+   '("google" "https://google.com/search?q=~a" "https://google.com")
+   '("doi" "https://dx.doi.org/~a" "https://dx.doi.org/")
+   '("duckduckgo" "https://duckduckgo.com/?q=~a" "https://duckduckgo.com/"))
+ "List of search engines.")
+
+
+
+
+
+
+(define-configuration context-buffer
+  "Go through the search engines above and make-search-engine out of them."
+  ((search-engines
+    (append %slot-default%
+            (mapcar
+             (lambda (engine) (apply 'make-search-engine engine))
+             *my-search-engines*)))))
+(defmacro alter-keyscheme (keyscheme scheme-name &body bindings)
+ #+nyxt-2
+ `(let ((scheme ,keyscheme))
+     (keymap:define-key (gethash ,scheme-name scheme)
+       ,@bindings)
+     scheme)
+ #+nyxt-3
+ `(keymaps:define-keyscheme-map "custom" (list :import ,keyscheme)
+     ,scheme-name
+     (list ,@bindings)))
+
+
+
+(define-configuration base-mode
+ ((keyscheme-map
+    (alter-keyscheme %slot-value%
+      nyxt/keyscheme:emacs
+      "M-h" 'history-tree
+      "M-h b" 'buffer-history-tree))))
+(define-configuration :status-buffer
+  "Display modes as short glyphs."
+  ((glyph-mode-presentation-p t)))
+
+(define-configuration status-buffer
+((style (str:concat
+           %slot-value%
+           (theme:themed-css (theme *browser*)
+	     `("#controls,#actions"
+	       :display none !important))))))
+
+
+(defmethod format-status-load-status ((status status-buffer))
+  "A fancier load status."
+  (spinneret:with-html-string
+   (:span (if (and (current-buffer)
+                   (web-buffer-p (current-buffer)))
+              (case (slot-value (current-buffer) 'nyxt::status)
+                    (:unloaded "∅")
+                    (:loading "∞")
+                    (:finished ""))
+            ""))))
