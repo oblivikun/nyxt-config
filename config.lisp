@@ -94,6 +94,7 @@
 		       nyxt/keyscheme:emacs
 		       "M-s s" 'search-buffers
 		       "M-h h" 'history-tree
+		       "M-h l b"  'list-bookmarks 
 		       "M-h b" 'buffer-history-tree
 
 		       ))))
@@ -107,10 +108,6 @@
              (theme:themed-css (theme *browser*)
 			       `("#controls,#actions"
 				 :display none !important))))))
-(define-configuration input-buffer
-    ((override-map
-      (let ((map (make-keymap "override-map")))
-	(define-key map "M-x" 'execute-command)))))
 
 (defmethod format-status-load-status ((status status-buffer))
   "A fancier load status."
@@ -121,7 +118,7 @@
                    (:unloaded "∅")
                    (:loading "∞")
                    (:finished ""))
-		 ""))))
+		 ))))
 (define-configuration input-buffer
  ((default-modes
     (append
